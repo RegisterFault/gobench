@@ -16,7 +16,7 @@ func main() {
 	procs := runtime.GOMAXPROCS(-1)
 	if len(args) == 1 {
 		if res, err := strconv.Atoi(args[0]); err == nil {
-			if res < procs {
+			if res < procs && res > 0 {
 				procs = res
 			}
 		}
