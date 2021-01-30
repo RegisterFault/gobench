@@ -28,7 +28,7 @@ func main() {
 	runtime.GOMAXPROCS(procs + 1) //gccgo wont run all goroutines if this isn't done
 	if len(args) == 1 {
 		if res, err := strconv.Atoi(args[0]); err == nil {
-			if res < procs {
+			if res < procs && res > 0 {
 				procs = res
 			}
 		}
