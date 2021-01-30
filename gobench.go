@@ -51,13 +51,19 @@ func increment(idx int) {
 
 func printCounters(procs int) {
 	last := make([]int64, procs)
+	first_loop := true
 	for {
 		for i := 0; i < procs; i++ {
 			delta := (cnt[i].c - last[i]) / 1000000
-			fmt.Println("millions:", delta)
+			if !first_loop {
+				fmt.Println("millions:", delta)
+			}
 			last[i] = cnt[i].c
 		}
-		fmt.Println()
+		if !first_loop {
+			fmt.Println()
+		}
+		first_loop = false
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
