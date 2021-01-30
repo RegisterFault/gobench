@@ -9,7 +9,18 @@ import (
 	"time"
 )
 
-var cnt []int64
+const cacheLinePadSize = 64
+
+type counter struct {
+	c int64
+	_ cacheLinePad
+}
+
+type cacheLinePad struct {
+	_ [cacheLinePadSize]byte
+}
+
+var cnt []counter
 
 func main() {
 	args := os.Args[1:]
@@ -23,7 +34,7 @@ func main() {
 		}
 	}
 	wg := sync.WaitGroup{}
-	cnt = make([]int64, procs)
+	cnt = make([]counter, procs)
 	for i := 0; i < procs; i++ {
 		wg.Add(1)
 		go increment(i)
@@ -34,7 +45,7 @@ func main() {
 
 func increment(idx int) {
 	for {
-		cnt[idx]++
+		cnt[idx].c++
 	}
 }
 
@@ -42,9 +53,9 @@ func printCounters(procs int) {
 	last := make([]int64, procs)
 	for {
 		for i := 0; i < procs; i++ {
-			delta := (cnt[i] - last[i]) / 1000000
+			delta := (cnt[i].c - last[i]) / 1000000
 			fmt.Println("millions:", delta)
-			last[i] = cnt[i]
+			last[i] = cnt[i].c
 		}
 		fmt.Println()
 		time.Sleep(1000 * time.Millisecond)
