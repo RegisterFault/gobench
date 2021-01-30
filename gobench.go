@@ -14,6 +14,7 @@ var cnt []int64
 func main() {
 	args := os.Args[1:]
 	procs := runtime.GOMAXPROCS(-1)
+	runtime.GOMAXPROCS(procs + 1) //gccgo wont run all goroutines if this isn't done
 	if len(args) == 1 {
 		if res, err := strconv.Atoi(args[0]); err == nil {
 			if res < procs {
