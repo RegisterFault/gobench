@@ -54,9 +54,8 @@ func increment(idx int) {
 func printCounters(procs int) {
 	last := make([]uint64, procs)
 	first_loop := true
-	var deltaSum uint64
 	for {
-		var deltaSum int64
+		var deltaSum uint64
 		deltaSum = 0.0
 		for i := 0; i < procs; i++ {
 			delta := (cnt[i].c - last[i]) / 1000000
