@@ -7,17 +7,13 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/sys/cpu"
 )
 
-const cacheLinePadSize = 64
-
 type counter struct {
-	c int64
-	_ cacheLinePad
-}
-
-type cacheLinePad struct {
-	_ [cacheLinePadSize]byte
+	c uint64
+	_ cpu.CacheLinePad
 }
 
 var cnt []counter
@@ -44,16 +40,24 @@ func main() {
 }
 
 func increment(idx int) {
+	count := cnt[idx].c
+	sync := 0
 	for {
-		cnt[idx].c++
+		count++
+		if sync++; sync > 10000000 {
+			cnt[idx].c = count
+			sync = 0
+		}
 	}
 }
 
 func printCounters(procs int) {
-	last := make([]int64, procs)
+	last := make([]uint64, procs)
 	first_loop := true
+	var deltaSum uint64
 	for {
 		var deltaSum int64
+		deltaSum = 0.0
 		for i := 0; i < procs; i++ {
 			delta := (cnt[i].c - last[i]) / 1000000
 			deltaSum += delta
