@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/sys/cpu"
@@ -21,7 +22,7 @@ var cnt []counter
 func main() {
 	args := os.Args[1:]
 	procs := runtime.GOMAXPROCS(-1)
-	runtime.GOMAXPROCS(procs + 1) //gccgo wont run all goroutines if this isn't done
+	runtime.GOMAXPROCS(procs + 1) // gccgo wont run all goroutines if this isn't done
 	if len(args) == 1 {
 		if res, err := strconv.Atoi(args[0]); err == nil {
 			if res < procs && res > 0 {
@@ -39,14 +40,15 @@ func main() {
 	wg.Wait()
 }
 
+const batchSize = 1000000
+
 func increment(idx int) {
-	count := cnt[idx].c
-	sync := 0
+	localCount := uint64(0)
 	for {
-		count++
-		if sync++; sync > 10000000 {
-			cnt[idx].c = count
-			sync = 0
+		localCount++
+		if localCount >= batchSize {
+			atomic.AddUint64(&cnt[idx].c, localCount)
+			localCount = 0
 		}
 	}
 }
@@ -56,14 +58,14 @@ func printCounters(procs int) {
 	first_loop := true
 	for {
 		var deltaSum uint64
-		deltaSum = 0.0
 		for i := 0; i < procs; i++ {
-			delta := (cnt[i].c - last[i]) / 1000000
+			curr := atomic.LoadUint64(&cnt[i].c)
+			delta := (curr - last[i]) / 1000000
 			deltaSum += delta
 			if !first_loop {
 				fmt.Println("millions:", delta)
 			}
-			last[i] = cnt[i].c
+			last[i] = curr
 		}
 		fmt.Println("Sum: ", deltaSum)
 		if !first_loop {
