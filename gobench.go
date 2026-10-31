@@ -6,14 +6,14 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"golang.org/x/sys/cpu"
 )
 
 type counter struct {
-	c uint64
+	c float64
+	mu sync.Mutex
 	_ cpu.CacheLinePad
 }
 
@@ -43,23 +43,27 @@ func main() {
 const batchSize = 1000000
 
 func increment(idx int) {
-	localCount := uint64(0)
+	localCount := float64(0)
 	for {
 		localCount++
 		if localCount >= batchSize {
-			atomic.AddUint64(&cnt[idx].c, localCount)
+			cnt[idx].mu.Lock()
+			cnt[idx].c += localCount
+			cnt[idx].mu.Unlock()
 			localCount = 0
 		}
 	}
 }
 
 func printCounters(procs int) {
-	last := make([]uint64, procs)
+	last := make([]float64, procs)
 	first_loop := true
 	for {
-		var deltaSum uint64
+		var deltaSum float64
 		for i := 0; i < procs; i++ {
-			curr := atomic.LoadUint64(&cnt[i].c)
+			cnt[i].mu.Lock()
+			curr := cnt[i].c
+			cnt[i].mu.Unlock()
 			delta := (curr - last[i]) / 1000000
 			deltaSum += delta
 			if !first_loop {
